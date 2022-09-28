@@ -18,7 +18,7 @@ def add_product():
 	priceA = domain_list[0]['fields']['price']
 	domainB = domain_list[1]['fields']['domain']
 	priceB = domain_list[1]['fields']['price']
-	
+
 	stripe.api_key = "YOUR_STRIPE_API_KEY"
 
 	prod_A_id = stripe.Product.create(name=domainA, type="good")["id"]
@@ -31,7 +31,7 @@ def add_product():
 	recordA = {'domain': domainA, 'price_id': price_id_A, 'listed': True}
 	airtable.update_by_field('domain', domainA, recordA)
 
-	with open(domainA+".txt", "w") as f:
+	with open(f"{domainA}.txt", "w") as f:
 		f.write("")
 
 	prod_B_id = stripe.Product.create(name=domainB, type="good")["id"]
@@ -44,7 +44,7 @@ def add_product():
 	recordB = {'domain': domainB, 'price_id': price_id_B, 'listed': True}
 	airtable.update_by_field('domain', domainB, recordB)
 
-	with open(domainB+".txt", "w") as f:
+	with open(f"{domainB}.txt", "w") as f:
 		f.write("")
 
 	return domainA, priceA, domainB, priceB
@@ -75,13 +75,28 @@ def send_newsletter():
 
 		#template = mp.templates.get(template_id='10007494')
 
-		urlA = 'https://www.sleek.domains/' + domainA
-		urlB = 'https://www.sleek.domains/' + domainB
+		urlA = f'https://www.sleek.domains/{domainA}'
+		urlB = f'https://www.sleek.domains/{domainB}'
 
 		index = open('email.html', 'r').read()
 		stemplate = Template(str(index))
 
-		mp.campaigns.content.update(campaign_id=campaign['id'], data={'message': "campaign message", 'html': stemplate.safe_substitute(date=calendar_date, domainA=domainA, priceA="$"+str(priceA), urlA=urlA, domainB=domainB, priceB="$"+str(priceB), urlB=urlB)})
+		mp.campaigns.content.update(
+			campaign_id=campaign['id'],
+			data={
+				'message': "campaign message",
+				'html': stemplate.safe_substitute(
+					date=calendar_date,
+					domainA=domainA,
+					priceA=f"${str(priceA)}",
+					urlA=urlA,
+					domainB=domainB,
+					priceB=f"${str(priceB)}",
+					urlB=urlB,
+				),
+			},
+		)
+
 
 		mp.campaigns.actions.send(campaign_id=campaign['id'])
 
@@ -156,16 +171,16 @@ def stripe_pay(domain):
 	)
 
 	try:
-		with open(domain+".txt", "a") as f:
+		with open(f"{domain}.txt", "a") as f:
 			f.write(session['payment_intent'])
 			f.write("\n")
 	except:
 		print("Whoops, file not found!")
 
 	return {
-        'checkout_session_id': session['id'], 
-        'checkout_public_key': "pk_live_NnhBxhSwnX9L0uvDyKy0iMUO"
-    }
+	    'checkout_session_id': session['id'], 
+	    'checkout_public_key': "pk_live_NnhBxhSwnX9L0uvDyKy0iMUO"
+	}
 
 @app.route('/thanks')
 def thanks():
@@ -201,7 +216,7 @@ def stripe_webhook():
 		stripe.api_key = "YOUR_STRIPE_API_KEY"
 		session = event['data']['object']
 		line_items = stripe.checkout.Session.list_line_items(session['id'], limit=1)
-		
+
 		try:
 			for line in list(open(line_items['data'][0]['description']+".txt")):
 				try:
